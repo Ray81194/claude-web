@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.PageVisit;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,21 +24,29 @@ import java.util.Set;
 @Controller
 public class HomeController {
 
+    // 画面コード定数
+    static final String SCREEN_HOME         = "HOME";
+    static final String SCREEN_REDIS        = "REDIS_SESSION";
+    static final String SCREEN_SESSION_LIST = "SESSION_LIST";
+
     @Autowired
     @Qualifier("sessionRedisTemplate")
     private RedisTemplate<String, Object> sessionRedisTemplate;
 
     @GetMapping("/")
     public String index(HttpSession session, Model model) {
+        recordVisit(session, SCREEN_HOME);
         String username = (String) session.getAttribute("username");
         model.addAttribute("username", username);
         model.addAttribute("sessionId", session.getId());
         model.addAttribute("visitCount", incrementVisitCount(session));
+        model.addAttribute("navigationHistory", getHistory(session));
         return "home";
     }
 
     @GetMapping("/session/redis")
     public String redisSession(HttpSession session, Model model) {
+        recordVisit(session, SCREEN_REDIS);
         String sessionKey = "spring:session:sessions:" + session.getId();
         Map<Object, Object> entries = sessionRedisTemplate.opsForHash().entries(sessionKey);
 
@@ -49,11 +58,14 @@ public class HomeController {
         model.addAttribute("sessionId", session.getId());
         model.addAttribute("redisKey", sessionKey);
         model.addAttribute("sessionData", sessionData);
+        model.addAttribute("navigationHistory", getHistory(session));
         return "redis-session";
     }
 
     @GetMapping("/session/list")
     public String sessionList(HttpSession currentSession, Model model) {
+        recordVisit(currentSession, SCREEN_SESSION_LIST);
+
         Set<String> keys = sessionRedisTemplate.keys("spring:session:sessions:*");
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -62,7 +74,6 @@ public class HomeController {
         List<Map<String, String>> sessions = new ArrayList<>();
         if (keys != null) {
             for (String key : keys) {
-                // expirations インデックスキーをスキップ
                 if (key.contains(":expirations:")) continue;
 
                 Map<Object, Object> hash = sessionRedisTemplate.opsForHash().entries(key);
@@ -82,6 +93,7 @@ public class HomeController {
 
         model.addAttribute("sessions", sessions);
         model.addAttribute("currentSessionId", currentSession.getId());
+        model.addAttribute("navigationHistory", getHistory(currentSession));
         return "session-list";
     }
 
@@ -89,7 +101,6 @@ public class HomeController {
     public String deleteSession(@PathVariable String sid, HttpSession currentSession) {
         String key = "spring:session:sessions:" + sid;
         sessionRedisTemplate.delete(key);
-        // 削除したのが自分自身なら新しいセッションへ
         if (sid.equals(currentSession.getId())) {
             currentSession.invalidate();
         }
@@ -106,6 +117,24 @@ public class HomeController {
     public String logout(HttpSession session) {
         session.invalidate();
         return "redirect:/";
+    }
+
+    // ---- ヘルパー ----
+
+    @SuppressWarnings("unchecked")
+    private void recordVisit(HttpSession session, String screenCode) {
+        List<PageVisit> history = (List<PageVisit>) session.getAttribute("navigationHistory");
+        if (history == null) {
+            history = new ArrayList<>();
+        }
+        history.add(new PageVisit(screenCode));
+        session.setAttribute("navigationHistory", history);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<PageVisit> getHistory(HttpSession session) {
+        List<PageVisit> history = (List<PageVisit>) session.getAttribute("navigationHistory");
+        return history != null ? history : new ArrayList<>();
     }
 
     private int incrementVisitCount(HttpSession session) {

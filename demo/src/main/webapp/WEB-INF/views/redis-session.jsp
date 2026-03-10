@@ -18,6 +18,11 @@
         th { background: #f5f5f5; }
         code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; word-break: break-all; }
         a { color: #4a90e2; text-decoration: none; }
+        .history-list { list-style: none; padding: 0; margin: 0; }
+        .history-list li { padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9em; display: flex; gap: 12px; }
+        .history-list li:last-child { border-bottom: none; }
+        .screen-code { font-weight: bold; color: #4a90e2; min-width: 130px; }
+        .visited-at { color: #888; }
     </style>
 </head>
 <body>
@@ -58,5 +63,21 @@
         </c:choose>
     </div>
 
+    <div class="card">
+        <h3>画面遷移履歴</h3>
+        <c:choose>
+            <c:when test="${not empty navigationHistory}">
+                <ul class="history-list">
+                    <c:forEach var="visit" items="${navigationHistory}">
+                        <li>
+                            <span class="screen-code">${visit.screenCode}</span>
+                            <span class="visited-at">${visit.visitedAt}</span>
+                        </li>
+                    </c:forEach>
+                </ul>
+            </c:when>
+            <c:otherwise><p style="color:#888">履歴なし</p></c:otherwise>
+        </c:choose>
+    </div>
 </body>
 </html>

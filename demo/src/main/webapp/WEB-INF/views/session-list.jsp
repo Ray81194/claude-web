@@ -20,6 +20,11 @@
         .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; background: #4a90e2; color: white; }
         button.del { padding: 4px 12px; background: #e25454; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
         .empty { color: #888; }
+        .history-list { list-style: none; padding: 0; margin: 0; }
+        .history-list li { padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9em; display: flex; gap: 12px; }
+        .history-list li:last-child { border-bottom: none; }
+        .screen-code { font-weight: bold; color: #4a90e2; min-width: 130px; }
+        .visited-at { color: #888; }
     </style>
 </head>
 <body>
@@ -74,6 +79,23 @@
             <c:otherwise>
                 <p class="empty">アクティブなセッションがありません。</p>
             </c:otherwise>
+        </c:choose>
+    </div>
+
+    <div class="card">
+        <h3>画面遷移履歴</h3>
+        <c:choose>
+            <c:when test="${not empty navigationHistory}">
+                <ul class="history-list">
+                    <c:forEach var="visit" items="${navigationHistory}">
+                        <li>
+                            <span class="screen-code">${visit.screenCode}</span>
+                            <span class="visited-at">${visit.visitedAt}</span>
+                        </li>
+                    </c:forEach>
+                </ul>
+            </c:when>
+            <c:otherwise><p style="color:#888">履歴なし</p></c:otherwise>
         </c:choose>
     </div>
 </body>
