@@ -84,10 +84,11 @@
 
     <div class="card">
         <h3>画面遷移履歴</h3>
+        <p style="font-size:0.85em;color:#888">セッションキー: <code>navigationSession</code> &nbsp;|&nbsp; 件数: ${navSession.size()}</p>
         <c:choose>
-            <c:when test="${not empty navigationHistory}">
+            <c:when test="${not empty navSession.history}">
                 <ul class="history-list">
-                    <c:forEach var="visit" items="${navigationHistory}">
+                    <c:forEach var="visit" items="${navSession.history}">
                         <li>
                             <span class="screen-code">${visit.screenCode}</span>
                             <span class="visited-at">${visit.visitedAt}</span>

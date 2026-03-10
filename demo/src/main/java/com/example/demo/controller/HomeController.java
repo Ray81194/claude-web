@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.PageVisit;
+import com.example.demo.dto.NavigationSession;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,24 +29,32 @@ public class HomeController {
     static final String SCREEN_REDIS        = "REDIS_SESSION";
     static final String SCREEN_SESSION_LIST = "SESSION_LIST";
 
+    private static final String NAV_SESSION_KEY = "navigationSession";
+
     @Autowired
     @Qualifier("sessionRedisTemplate")
     private RedisTemplate<String, Object> sessionRedisTemplate;
 
     @GetMapping("/")
     public String index(HttpSession session, Model model) {
-        recordVisit(session, SCREEN_HOME);
+        NavigationSession navSession = getOrCreateNavSession(session);
+        navSession.addVisit(SCREEN_HOME);
+        session.setAttribute(NAV_SESSION_KEY, navSession);
+
         String username = (String) session.getAttribute("username");
         model.addAttribute("username", username);
         model.addAttribute("sessionId", session.getId());
         model.addAttribute("visitCount", incrementVisitCount(session));
-        model.addAttribute("navigationHistory", getHistory(session));
+        model.addAttribute("navSession", navSession);
         return "home";
     }
 
     @GetMapping("/session/redis")
     public String redisSession(HttpSession session, Model model) {
-        recordVisit(session, SCREEN_REDIS);
+        NavigationSession navSession = getOrCreateNavSession(session);
+        navSession.addVisit(SCREEN_REDIS);
+        session.setAttribute(NAV_SESSION_KEY, navSession);
+
         String sessionKey = "spring:session:sessions:" + session.getId();
         Map<Object, Object> entries = sessionRedisTemplate.opsForHash().entries(sessionKey);
 
@@ -58,13 +66,15 @@ public class HomeController {
         model.addAttribute("sessionId", session.getId());
         model.addAttribute("redisKey", sessionKey);
         model.addAttribute("sessionData", sessionData);
-        model.addAttribute("navigationHistory", getHistory(session));
+        model.addAttribute("navSession", navSession);
         return "redis-session";
     }
 
     @GetMapping("/session/list")
     public String sessionList(HttpSession currentSession, Model model) {
-        recordVisit(currentSession, SCREEN_SESSION_LIST);
+        NavigationSession navSession = getOrCreateNavSession(currentSession);
+        navSession.addVisit(SCREEN_SESSION_LIST);
+        currentSession.setAttribute(NAV_SESSION_KEY, navSession);
 
         Set<String> keys = sessionRedisTemplate.keys("spring:session:sessions:*");
 
@@ -93,7 +103,7 @@ public class HomeController {
 
         model.addAttribute("sessions", sessions);
         model.addAttribute("currentSessionId", currentSession.getId());
-        model.addAttribute("navigationHistory", getHistory(currentSession));
+        model.addAttribute("navSession", navSession);
         return "session-list";
     }
 
@@ -121,20 +131,9 @@ public class HomeController {
 
     // ---- ヘルパー ----
 
-    @SuppressWarnings("unchecked")
-    private void recordVisit(HttpSession session, String screenCode) {
-        List<PageVisit> history = (List<PageVisit>) session.getAttribute("navigationHistory");
-        if (history == null) {
-            history = new ArrayList<>();
-        }
-        history.add(new PageVisit(screenCode));
-        session.setAttribute("navigationHistory", history);
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<PageVisit> getHistory(HttpSession session) {
-        List<PageVisit> history = (List<PageVisit>) session.getAttribute("navigationHistory");
-        return history != null ? history : new ArrayList<>();
+    private NavigationSession getOrCreateNavSession(HttpSession session) {
+        NavigationSession navSession = (NavigationSession) session.getAttribute(NAV_SESSION_KEY);
+        return navSession != null ? navSession : new NavigationSession();
     }
 
     private int incrementVisitCount(HttpSession session) {
