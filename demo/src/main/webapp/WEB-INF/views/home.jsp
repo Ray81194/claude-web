@@ -8,6 +8,9 @@
     <title>Spring Boot + Redis Session Demo</title>
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+        nav { margin-bottom: 24px; }
+        nav a { margin-right: 16px; color: #4a90e2; text-decoration: none; }
+        nav a.active { font-weight: bold; color: #333; }
         .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
         .label { font-weight: bold; color: #555; }
         input[type=text] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; }
@@ -16,12 +19,17 @@
     </style>
 </head>
 <body>
+    <nav>
+        <a href="/" class="active">ホーム</a>
+        <a href="/session/redis">Redis セッション値</a>
+        <a href="/session/list">セッション管理</a>
+    </nav>
+
     <h1>Spring Boot 3 + Redis Session</h1>
 
     <div class="card">
         <p><span class="label">セッションID:</span> ${sessionId}</p>
         <p><span class="label">アクセス回数:</span> ${visitCount} 回</p>
-        <p><a href="/session/redis">Redis セッション値を確認</a></p>
     </div>
 
     <c:choose>

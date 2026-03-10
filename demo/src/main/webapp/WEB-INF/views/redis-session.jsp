@@ -8,6 +8,9 @@
     <title>Redis セッション値</title>
     <style>
         body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
+        nav { margin-bottom: 24px; }
+        nav a { margin-right: 16px; color: #4a90e2; text-decoration: none; }
+        nav a.active { font-weight: bold; color: #333; }
         .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
         .label { font-weight: bold; color: #555; }
         table { width: 100%; border-collapse: collapse; }
@@ -18,6 +21,12 @@
     </style>
 </head>
 <body>
+    <nav>
+        <a href="/">ホーム</a>
+        <a href="/session/redis" class="active">Redis セッション値</a>
+        <a href="/session/list">セッション管理</a>
+    </nav>
+
     <h1>Redis セッション値</h1>
 
     <div class="card">
@@ -49,6 +58,5 @@
         </c:choose>
     </div>
 
-    <a href="/">&larr; トップに戻る</a>
 </body>
 </html>
