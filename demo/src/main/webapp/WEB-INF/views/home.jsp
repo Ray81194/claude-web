@@ -21,6 +21,7 @@
     <div class="card">
         <p><span class="label">セッションID:</span> ${sessionId}</p>
         <p><span class="label">アクセス回数:</span> ${visitCount} 回</p>
+        <p><a href="/session/redis">Redis セッション値を確認</a></p>
     </div>
 
     <c:choose>
