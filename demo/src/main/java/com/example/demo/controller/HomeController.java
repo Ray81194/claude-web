@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.AppSession;
 import com.example.demo.dto.NavigationSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
@@ -26,7 +27,6 @@ import java.util.Set;
 @Controller
 public class HomeController {
 
-    // 画面コード定数
     static final String SCREEN_HOME         = "HOME";
     static final String SCREEN_REDIS        = "REDIS_SESSION";
     static final String SCREEN_SESSION_LIST = "SESSION_LIST";
@@ -40,45 +40,56 @@ public class HomeController {
     @Autowired
     private ObjectMapper objectMapper;
 
+    // ---- エンドポイント ----
+
     @GetMapping("/")
     public String index(HttpSession session, Model model) {
-        NavigationSession navSession = loadNavSession(session.getId());
-        navSession.addVisit(SCREEN_HOME);
-        saveSession(session, navSession);
+        AppSession app = load(session.getId());
+        app.getNavigation().addVisit(SCREEN_HOME);
+        app.setVisitCount(app.getVisitCount() + 1);
+        save(app);
 
-        model.addAttribute("username", session.getAttribute("username"));
-        model.addAttribute("sessionId", session.getId());
-        model.addAttribute("visitCount", incrementVisitCount(session));
-        model.addAttribute("navSession", navSession);
+        model.addAttribute("username",   app.getUsername());
+        model.addAttribute("sessionId",  app.getSessionId());
+        model.addAttribute("visitCount", app.getVisitCount());
+        model.addAttribute("navSession", app.getNavigation());
         return "home";
     }
 
     @GetMapping("/session/redis")
     public String redisSession(HttpSession session, Model model) {
-        NavigationSession navSession = loadNavSession(session.getId());
-        navSession.addVisit(SCREEN_REDIS);
-        saveSession(session, navSession);
+        AppSession app = load(session.getId());
+        app.getNavigation().addVisit(SCREEN_REDIS);
+        app.setVisitCount(app.getVisitCount() + 1);
+        save(app);
 
-        String key = APP_SESSION_KEY_PREFIX + session.getId();
-        Map<Object, Object> raw = stringRedisTemplate.opsForHash().entries(key);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneId.of("Asia/Tokyo"));
 
         Map<String, Object> sessionData = new LinkedHashMap<>();
-        for (Map.Entry<Object, Object> entry : raw.entrySet()) {
-            sessionData.put(entry.getKey().toString(), entry.getValue());
+        sessionData.put("sessionId",       app.getSessionId());
+        sessionData.put("username",        blankOr(app.getUsername(), "（未ログイン）"));
+        sessionData.put("visitCount",      app.getVisitCount());
+        sessionData.put("createdAt",       fmt.format(Instant.ofEpochMilli(app.getCreatedAt())));
+        sessionData.put("lastAccessedAt",  fmt.format(Instant.ofEpochMilli(app.getLastAccessedAt())));
+        sessionData.put("navigation.size", app.getNavigation().size());
+        if (app.getNavigation().getCurrentPage() != null) {
+            sessionData.put("navigation.currentPage", app.getNavigation().getCurrentPage().getScreenCode());
         }
 
-        model.addAttribute("sessionId", session.getId());
-        model.addAttribute("redisKey", key);
+        model.addAttribute("sessionId",   app.getSessionId());
+        model.addAttribute("redisKey",    APP_SESSION_KEY_PREFIX + app.getSessionId());
         model.addAttribute("sessionData", sessionData);
-        model.addAttribute("navSession", navSession);
+        model.addAttribute("navSession",  app.getNavigation());
         return "redis-session";
     }
 
     @GetMapping("/session/list")
     public String sessionList(HttpSession currentSession, Model model) {
-        NavigationSession navSession = loadNavSession(currentSession.getId());
-        navSession.addVisit(SCREEN_SESSION_LIST);
-        saveSession(currentSession, navSession);
+        AppSession app = load(currentSession.getId());
+        app.getNavigation().addVisit(SCREEN_SESSION_LIST);
+        app.setVisitCount(app.getVisitCount() + 1);
+        save(app);
 
         Set<String> keys = stringRedisTemplate.keys(APP_SESSION_KEY_PREFIX + "*");
 
@@ -88,31 +99,30 @@ public class HomeController {
         List<Map<String, String>> sessions = new ArrayList<>();
         if (keys != null) {
             for (String key : keys) {
-                Map<Object, Object> hash = stringRedisTemplate.opsForHash().entries(key);
-                Map<String, String> info = new HashMap<>();
-                String sid = key.replace(APP_SESSION_KEY_PREFIX, "");
-                info.put("id", sid);
-                info.put("current", sid.equals(currentSession.getId()) ? "true" : "false");
-                info.put("username", valueOf(hash.get("username"), "（未ログイン）"));
-
-                Object ct = hash.get("createdAt");
-                Object la = hash.get("lastAccessedAt");
-                info.put("creationTime",      ct != null ? fmt.format(Instant.ofEpochMilli(toLong(ct))) : "-");
-                info.put("lastAccessedTime",  la != null ? fmt.format(Instant.ofEpochMilli(toLong(la))) : "-");
-                sessions.add(info);
+                String json = stringRedisTemplate.opsForValue().get(key);
+                if (json == null) continue;
+                try {
+                    AppSession s = objectMapper.readValue(json, AppSession.class);
+                    Map<String, String> info = new HashMap<>();
+                    info.put("id",              s.getSessionId());
+                    info.put("current",         s.getSessionId().equals(currentSession.getId()) ? "true" : "false");
+                    info.put("username",        blankOr(s.getUsername(), "（未ログイン）"));
+                    info.put("creationTime",    fmt.format(Instant.ofEpochMilli(s.getCreatedAt())));
+                    info.put("lastAccessedTime",fmt.format(Instant.ofEpochMilli(s.getLastAccessedAt())));
+                    sessions.add(info);
+                } catch (Exception ignored) {}
             }
         }
 
-        model.addAttribute("sessions", sessions);
-        model.addAttribute("currentSessionId", currentSession.getId());
-        model.addAttribute("navSession", navSession);
+        model.addAttribute("sessions",   sessions);
+        model.addAttribute("navSession", app.getNavigation());
         return "session-list";
     }
 
     @PostMapping("/session/delete/{sid}")
     public String deleteSession(@PathVariable String sid, HttpSession currentSession) {
+        // app:session のみ削除（Spring Session には触れない）
         stringRedisTemplate.delete(APP_SESSION_KEY_PREFIX + sid);
-        stringRedisTemplate.delete("spring:session:sessions:" + sid);
         if (sid.equals(currentSession.getId())) {
             currentSession.invalidate();
         }
@@ -121,8 +131,9 @@ public class HomeController {
 
     @PostMapping("/login")
     public String login(@RequestParam String username, HttpSession session) {
-        session.setAttribute("username", username);
-        stringRedisTemplate.opsForHash().put(APP_SESSION_KEY_PREFIX + session.getId(), "username", username);
+        AppSession app = load(session.getId());
+        app.setUsername(username);
+        save(app);
         return "redirect:/";
     }
 
@@ -135,48 +146,35 @@ public class HomeController {
 
     // ---- ヘルパー ----
 
-    private NavigationSession loadNavSession(String sessionId) {
-        String key = APP_SESSION_KEY_PREFIX + sessionId;
-        Object navJson = stringRedisTemplate.opsForHash().get(key, "nav");
-        if (navJson == null) return new NavigationSession();
-        try {
-            return objectMapper.readValue(navJson.toString(), NavigationSession.class);
-        } catch (Exception e) {
-            return new NavigationSession();
+    /** Redis から AppSession を読み込む。なければ新規作成。 */
+    private AppSession load(String sessionId) {
+        String json = stringRedisTemplate.opsForValue().get(APP_SESSION_KEY_PREFIX + sessionId);
+        if (json != null) {
+            try {
+                AppSession s = objectMapper.readValue(json, AppSession.class);
+                if (s.getNavigation() == null) s.setNavigation(new NavigationSession());
+                return s;
+            } catch (Exception ignored) {}
         }
+        AppSession s = new AppSession();
+        s.setSessionId(sessionId);
+        s.setCreatedAt(System.currentTimeMillis());
+        s.setNavigation(new NavigationSession());
+        return s;
     }
 
-    private void saveSession(HttpSession session, NavigationSession navSession) {
-        String key = APP_SESSION_KEY_PREFIX + session.getId();
+    /** AppSession を JSON 文字列として Redis に保存する。 */
+    private void save(AppSession app) {
+        app.setLastAccessedAt(System.currentTimeMillis());
         try {
-            stringRedisTemplate.opsForHash().putIfAbsent(key, "createdAt",
-                    String.valueOf(System.currentTimeMillis()));
-            stringRedisTemplate.opsForHash().put(key, "nav",
-                    objectMapper.writeValueAsString(navSession));
-            stringRedisTemplate.opsForHash().put(key, "username",
-                    valueOf(session.getAttribute("username"), ""));
-            stringRedisTemplate.opsForHash().put(key, "lastAccessedAt",
-                    String.valueOf(System.currentTimeMillis()));
-            stringRedisTemplate.expire(key, SESSION_TTL);
+            String json = objectMapper.writeValueAsString(app);
+            stringRedisTemplate.opsForValue().set(APP_SESSION_KEY_PREFIX + app.getSessionId(), json, SESSION_TTL);
         } catch (Exception e) {
             throw new RuntimeException("セッション保存失敗", e);
         }
     }
 
-    private int incrementVisitCount(HttpSession session) {
-        Integer count = (Integer) session.getAttribute("visitCount");
-        int newCount = (count == null) ? 1 : count + 1;
-        session.setAttribute("visitCount", newCount);
-        return newCount;
-    }
-
-    private String valueOf(Object o, String fallback) {
-        return (o != null && !o.toString().isEmpty()) ? o.toString() : fallback;
-    }
-
-    private long toLong(Object o) {
-        if (o instanceof Long l) return l;
-        if (o instanceof Integer i) return i.longValue();
-        return Long.parseLong(o.toString());
+    private String blankOr(String value, String fallback) {
+        return (value != null && !value.isBlank()) ? value : fallback;
     }
 }
