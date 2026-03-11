@@ -1,8 +1,5 @@
 package com.example.demo.dto;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,8 +12,6 @@ public class NavigationSession implements Serializable {
 
     private final List<PageVisit> history = new ArrayList<>();
 
-    @JsonSerialize(using = PageVisitSerializer.class)
-    @JsonDeserialize(using = PageVisitDeserializer.class)
     private PageVisit currentPage;
 
     public void addVisit(String screenCode) {
