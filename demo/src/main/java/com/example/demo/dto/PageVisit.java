@@ -1,5 +1,8 @@
 package com.example.demo.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -8,21 +11,25 @@ import java.time.LocalDateTime;
  */
 public class PageVisit implements Serializable {
 
-    private String screenCode;
-    private LocalDateTime visitedAt;
-
-    public PageVisit() {}
+    private final String screenCode;
+    private final LocalDateTime visitedAt;
 
     public PageVisit(String screenCode) {
         this.screenCode = screenCode;
         this.visitedAt = LocalDateTime.now();
     }
 
+    @JsonCreator
+    public PageVisit(
+            @JsonProperty("screenCode") String screenCode,
+            @JsonProperty("visitedAt") LocalDateTime visitedAt) {
+        this.screenCode = screenCode;
+        this.visitedAt = visitedAt;
+    }
+
     public String getScreenCode() { return screenCode; }
-    public void setScreenCode(String screenCode) { this.screenCode = screenCode; }
 
     public LocalDateTime getVisitedAt() { return visitedAt; }
-    public void setVisitedAt(LocalDateTime visitedAt) { this.visitedAt = visitedAt; }
 
     @Override
     public String toString() {
