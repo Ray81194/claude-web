@@ -11,9 +11,15 @@ import java.util.List;
 public class NavigationSession implements Serializable {
 
     private final List<PageVisit> history = new ArrayList<>();
+    private PageVisit currentPage;
 
     public void addVisit(String screenCode) {
-        history.add(new PageVisit(screenCode));
+        currentPage = new PageVisit(screenCode);
+        history.add(currentPage);
+    }
+
+    public PageVisit getCurrentPage() {
+        return currentPage;
     }
 
     public List<PageVisit> getHistory() {
