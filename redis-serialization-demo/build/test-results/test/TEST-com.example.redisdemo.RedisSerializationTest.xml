@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.redisdemo.RedisSerializationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-12T23:13:30.611Z" hostname="(none)" time="1.029">
+  <properties/>
+  <testcase name="testJsonFormatAccountIdIsPlainString()" classname="com.example.redisdemo.RedisSerializationTest" time="1.029"/>
+  <system-out><![CDATA[23:13:29.305 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.redisdemo.RedisSerializationTest]: RedisSerializationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:13:29.385 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.redisdemo.RedisDemoApplication for test class com.example.redisdemo.RedisSerializationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.11)
+
+2026-03-12T23:13:29.701Z  INFO 12654 --- [redis-serialization-demo] [    Test worker] c.e.redisdemo.RedisSerializationTest     : Starting RedisSerializationTest using Java 21.0.10 with PID 12654 (started by root in /home/user/claude-web/redis-serialization-demo)
+2026-03-12T23:13:29.703Z  INFO 12654 --- [redis-serialization-demo] [    Test worker] c.e.redisdemo.RedisSerializationTest     : No active profile set, falling back to 1 default profile: "default"
+2026-03-12T23:13:29.997Z  INFO 12654 --- [redis-serialization-demo] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-03-12T23:13:29.999Z  INFO 12654 --- [redis-serialization-demo] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-03-12T23:13:30.031Z  INFO 12654 --- [redis-serialization-demo] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 0 Redis repository interfaces.
+2026-03-12T23:13:30.604Z  INFO 12654 --- [redis-serialization-demo] [    Test worker] c.e.redisdemo.RedisSerializationTest     : Started RedisSerializationTest in 1.109 seconds (process running for 1.939)
+=== Actual JSON stored in Redis ===
+{
+  "@class" : "com.example.redisdemo.dto.TransferDto",
+  "fromAccount" : "AC-000001",
+  "toAccount" : "AC-000002",
+  "amount" : {
+    "@class" : "com.example.redisdemo.dto.Money",
+    "value" : 3000,
+    "currency" : "JPY"
+  }
+}
+===================================
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/root/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.17.8/f09415827a71be7ed621c7bd02550678f28bc81c/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>
