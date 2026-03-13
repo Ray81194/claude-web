@@ -13,7 +13,6 @@ public class TransferDto {
     @JsonSerialize(using = OrderStatus.Serializer.class)
     @JsonDeserialize(using = OrderStatus.Deserializer.class)
     private OrderStatus status;
-    @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
     @JsonSerialize(using = TransferType.Serializer.class)
     @JsonDeserialize(using = TransferType.Deserializer.class)
     private TransferType transferType;
