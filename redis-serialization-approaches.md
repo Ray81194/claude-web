@@ -14,32 +14,8 @@
 ```
 
 ### 実装イメージ
-```java
-// DTO フィールド側
-@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-@JsonSerialize(using = TransferType.Serializer.class)
-@JsonDeserialize(using = TransferType.Deserializer.class)
-private TransferType transferType;
 
-// TransferType 内
-public static class Serializer extends JsonSerializer<TransferType> {
-    @Override
-    public void serialize(TransferType value, JsonGenerator gen, SerializerProvider p) throws IOException {
-        gen.writeString(value.getCode());
-    }
-}
-
-public static class Deserializer extends JsonDeserializer<TransferType> {
-    @Override
-    public TransferType deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-        return TransferType.of(p.getText());
-    }
-}
-```
-
-### 実際のコード（OrderStatus）
-
-**`TransferDto.java`** — フィールド定義
+**`TransferDto.java`**
 ```java
 @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
 @JsonSerialize(using = OrderStatus.Serializer.class)
@@ -47,7 +23,7 @@ public static class Deserializer extends JsonDeserializer<TransferType> {
 private OrderStatus status;
 ```
 
-**`OrderStatus.java`** — 型クラス
+**`OrderStatus.java`**
 ```java
 public class OrderStatus {
 
@@ -118,60 +94,15 @@ public class OrderStatus {
 ```
 
 ### 実装イメージ
-```java
-// TransferType クラス側
-@JsonSerialize(using = TransferType.Serializer.class)
-@JsonDeserialize(using = TransferType.Deserializer.class)
-public class TransferType {
 
-    public static class Serializer extends JsonSerializer<TransferType> {
-        @Override
-        public void serialize(TransferType value, JsonGenerator gen, SerializerProvider p) throws IOException {
-            gen.writeStartObject();
-            gen.writeStringField("code", value.getCode());
-            gen.writeEndObject();
-        }
-
-        @Override
-        public void serializeWithType(TransferType value, JsonGenerator gen, SerializerProvider p, TypeSerializer typeSer) throws IOException {
-            WritableTypeId typeId = typeSer.typeId(value, JsonToken.START_OBJECT);
-            typeSer.writeTypePrefix(gen, typeId);
-            gen.writeStringField("code", value.getCode());
-            typeSer.writeTypeSuffix(gen, typeId);
-        }
-    }
-
-    public static class Deserializer extends JsonDeserializer<TransferType> {
-        @Override
-        public TransferType deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-            // パーサー状態によって分岐が必要（複雑）
-            if (p.currentToken() == JsonToken.START_OBJECT) {
-                p.nextToken(); // FIELD_NAME
-            }
-            String code = null;
-            while (p.currentToken() != JsonToken.END_OBJECT) {
-                if ("code".equals(p.currentName())) {
-                    p.nextToken();
-                    code = p.getText();
-                }
-                p.nextToken();
-            }
-            return TransferType.of(code);
-        }
-    }
-}
-```
-
-### 実際のコード（TransferType）
-
-**`TransferDto.java`** — フィールド定義
+**`TransferDto.java`**
 ```java
 @JsonSerialize(using = TransferType.Serializer.class)
 @JsonDeserialize(using = TransferType.Deserializer.class)
 private TransferType transferType;
 ```
 
-**`TransferType.java`** — 型クラス
+**`TransferType.java`**
 ```java
 @JsonSerialize(using = TransferType.Serializer.class)
 @JsonDeserialize(using = TransferType.Deserializer.class)
@@ -272,8 +203,15 @@ public class TransferType {
 ```
 
 ### 実装イメージ
+
+**`TransferDto.java`**
 ```java
-// TransferType クラス側
+@JsonSerialize(using = TransferType.Serializer.class)
+private TransferType transferType;
+```
+
+**`TransferType.java`**
+```java
 @JsonSerialize(using = TransferType.Serializer.class)
 public class TransferType {
 
