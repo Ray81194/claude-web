@@ -13,10 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-import org.springframework.data.redis.serializer.SerializationException;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 public class DefaultSerializerOrderStatusTest {
@@ -69,9 +66,9 @@ public class DefaultSerializerOrderStatusTest {
         assertThat(rawJson).contains("\"status\":\"01\"");
         assertThat(rawJson).doesNotContain("\"@class\":\"com.example.redisdemo.dto.OrderStatus\"");
         assertThat(rawJson).doesNotContain("保留");
-        // TransferType はコード文字列のみ（@class なし、ラベルなし）
-        assertThat(rawJson).contains("\"transferType\":\"02\"");
-        assertThat(rawJson).doesNotContain("\"@class\":\"com.example.redisdemo.dto.TransferType\"");
+        // TransferType は @class あり・code フィールドのみ（ラベルなし）
+        assertThat(rawJson).contains("\"@class\":\"com.example.redisdemo.dto.TransferType\"");
+        assertThat(rawJson).contains("\"code\":\"02\"");
         assertThat(rawJson).doesNotContain("速達");
     }
 
@@ -79,13 +76,27 @@ public class DefaultSerializerOrderStatusTest {
     void testDeserializedValues() {
         redisTemplate.opsForValue().set(KEY, sampleDto());
 
-        // @JsonTypeInfo(use = NONE) を外した結果:
-        // GenericJackson2JsonRedisSerializer はデフォルト型付きで動作するため、
-        // プレーン文字列 "02" から @class を探そうとして InvalidTypeIdException が発生する。
-        assertThatThrownBy(() -> redisTemplate.opsForValue().get(KEY))
-                .isInstanceOf(SerializationException.class)
-                .hasMessageContaining("Could not read JSON")
-                .cause()
-                .hasMessageContaining("transferType");
+        TransferDto retrieved = (TransferDto) redisTemplate.opsForValue().get(KEY);
+        System.out.println("=== デシリアライズ ===");
+        System.out.println("status       : " + retrieved.getStatus().getCode()
+                + " / " + retrieved.getStatus().getLabel());
+        System.out.println("transferType : " + retrieved.getTransferType().getCode()
+                + " / " + retrieved.getTransferType().getLabel());
+
+        assertThat(retrieved).isNotNull();
+        // AccountId
+        assertThat(retrieved.getFromAccount()).isEqualTo(AccountId.of("AC-000001"));
+        assertThat(retrieved.getToAccount()).isEqualTo(AccountId.of("AC-000002"));
+        // Money
+        assertThat(retrieved.getAmount().getValue()).isEqualTo(3000);
+        assertThat(retrieved.getAmount().getCurrency()).isEqualTo("JPY");
+        // OrderStatus - コード・ラベル・シングルトン同一性
+        assertThat(retrieved.getStatus().getCode()).isEqualTo("01");
+        assertThat(retrieved.getStatus().getLabel()).isEqualTo("保留");
+        assertThat(retrieved.getStatus()).isSameAs(OrderStatus.PENDING);
+        // TransferType - コード・ラベル・シングルトン同一性
+        assertThat(retrieved.getTransferType().getCode()).isEqualTo("02");
+        assertThat(retrieved.getTransferType().getLabel()).isEqualTo("速達");
+        assertThat(retrieved.getTransferType()).isSameAs(TransferType.EXPRESS);
     }
 }

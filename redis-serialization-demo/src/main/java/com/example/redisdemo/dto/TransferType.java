@@ -2,15 +2,21 @@ package com.example.redisdemo.dto;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 
 import java.io.IOException;
 import java.util.Map;
 
+@JsonSerialize(using = TransferType.Serializer.class)
+@JsonDeserialize(using = TransferType.Deserializer.class)
 public class TransferType {
 
     public static final TransferType NORMAL  = new TransferType("01", "通常");
@@ -62,7 +68,10 @@ public class TransferType {
         public void serializeWithType(TransferType value, JsonGenerator gen,
                                       SerializerProvider provider,
                                       TypeSerializer typeSer) throws IOException {
-            serialize(value, gen, provider);
+            WritableTypeId typeId = typeSer.typeId(value, JsonToken.START_OBJECT);
+            typeSer.writeTypePrefix(gen, typeId);
+            gen.writeStringField("code", value.getCode());
+            typeSer.writeTypeSuffix(gen, typeId);
         }
     }
 
@@ -70,7 +79,26 @@ public class TransferType {
         @Override
         public TransferType deserialize(JsonParser p,
                                         DeserializationContext ctxt) throws IOException {
-            return TransferType.of(p.getValueAsString());
+            JsonToken token = p.currentToken();
+            if (token == JsonToken.VALUE_STRING) {
+                return TransferType.of(p.getText());
+            }
+            // オブジェクト形式: START_OBJECT から始まるか、@class 消費後の FIELD_NAME から始まる
+            String code = null;
+            if (token == JsonToken.START_OBJECT) {
+                token = p.nextToken();
+            }
+            while (token == JsonToken.FIELD_NAME) {
+                String field = p.currentName();
+                p.nextToken();
+                if ("code".equals(field)) {
+                    code = p.getText();
+                } else {
+                    p.skipChildren();
+                }
+                token = p.nextToken();
+            }
+            return TransferType.of(code);
         }
     }
 }
