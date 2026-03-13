@@ -1,4 +1,4 @@
-package com.example.redisdemo.dto;
+package com.example.redisdemo.dto.type;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

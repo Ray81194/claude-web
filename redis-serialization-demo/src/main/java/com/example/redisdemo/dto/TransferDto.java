@@ -1,5 +1,9 @@
 package com.example.redisdemo.dto;
 
+import com.example.redisdemo.dto.type.AccountId;
+import com.example.redisdemo.dto.type.Money;
+import com.example.redisdemo.dto.type.OrderStatus;
+import com.example.redisdemo.dto.type.TransferType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

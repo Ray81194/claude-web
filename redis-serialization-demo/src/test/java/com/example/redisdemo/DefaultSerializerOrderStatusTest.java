@@ -1,10 +1,10 @@
 package com.example.redisdemo;
 
-import com.example.redisdemo.dto.AccountId;
-import com.example.redisdemo.dto.Money;
-import com.example.redisdemo.dto.OrderStatus;
 import com.example.redisdemo.dto.TransferDto;
-import com.example.redisdemo.dto.TransferType;
+import com.example.redisdemo.dto.type.AccountId;
+import com.example.redisdemo.dto.type.Money;
+import com.example.redisdemo.dto.type.OrderStatus;
+import com.example.redisdemo.dto.type.TransferType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,15 +59,15 @@ public class DefaultSerializerOrderStatusTest {
         assertThat(rawJson).contains("\"fromAccount\":\"AC-000001\"");
         assertThat(rawJson).contains("\"toAccount\":\"AC-000002\"");
         // Money は @class あり
-        assertThat(rawJson).contains("\"@class\":\"com.example.redisdemo.dto.Money\"");
+        assertThat(rawJson).contains("\"@class\":\"com.example.redisdemo.dto.type.Money\"");
         assertThat(rawJson).contains("\"value\":3000");
         assertThat(rawJson).contains("\"currency\":\"JPY\"");
         // OrderStatus はコード文字列のみ（@class なし、ラベルなし）
         assertThat(rawJson).contains("\"status\":\"01\"");
-        assertThat(rawJson).doesNotContain("\"@class\":\"com.example.redisdemo.dto.OrderStatus\"");
+        assertThat(rawJson).doesNotContain("\"@class\":\"com.example.redisdemo.dto.type.OrderStatus\"");
         assertThat(rawJson).doesNotContain("保留");
         // TransferType は @class あり・code フィールドのみ（ラベルなし）
-        assertThat(rawJson).contains("\"@class\":\"com.example.redisdemo.dto.TransferType\"");
+        assertThat(rawJson).contains("\"@class\":\"com.example.redisdemo.dto.type.TransferType\"");
         assertThat(rawJson).contains("\"code\":\"02\"");
         assertThat(rawJson).doesNotContain("速達");
     }

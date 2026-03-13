@@ -1,4 +1,4 @@
-package com.example.redisdemo.dto;
+package com.example.redisdemo.dto.type;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -57,7 +57,7 @@ public class TransferType {
     @Override
     public String toString() { return code + ":" + label; }
 
-    static class Serializer extends JsonSerializer<TransferType> {
+    public static class Serializer extends JsonSerializer<TransferType> {
         @Override
         public void serialize(TransferType value, JsonGenerator gen,
                               SerializerProvider provider) throws IOException {
@@ -75,7 +75,7 @@ public class TransferType {
         }
     }
 
-    static class Deserializer extends JsonDeserializer<TransferType> {
+    public static class Deserializer extends JsonDeserializer<TransferType> {
         @Override
         public TransferType deserialize(JsonParser p,
                                         DeserializationContext ctxt) throws IOException {
