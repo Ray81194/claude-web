@@ -27,11 +27,6 @@ public static class Serializer extends JsonSerializer<TransferType> {
     public void serialize(TransferType value, JsonGenerator gen, SerializerProvider p) throws IOException {
         gen.writeString(value.getCode());
     }
-
-    @Override
-    public void serializeWithType(TransferType value, JsonGenerator gen, SerializerProvider p, TypeSerializer typeSer) throws IOException {
-        serialize(value, gen, p); // 型情報を抑制してプレーン文字列で出力
-    }
 }
 
 public static class Deserializer extends JsonDeserializer<TransferType> {
@@ -50,7 +45,7 @@ public static class Deserializer extends JsonDeserializer<TransferType> {
 
 ### デメリット
 - `@JsonTypeInfo(use=NONE)` を知らない人には非直感的に見える
-- `serializeWithType` が `serialize` を呼ぶだけで、なぜ型情報を抑制するのか読み取りにくい
+- `@JsonTypeInfo(use=NONE)` を知らない人には、なぜ型情報が抑制されるのか読み取りにくい
 - アノテーションがフィールド側に分散する
 
 ---
