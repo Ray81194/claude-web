@@ -1,8 +1,5 @@
 package com.example.redisdemo.dto;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -14,9 +11,6 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import java.io.IOException;
 import java.util.Map;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-@JsonSerialize(using = OrderStatus.Serializer.class)
-@JsonDeserialize(using = OrderStatus.Deserializer.class)
 public class OrderStatus {
 
     public static final OrderStatus PENDING   = new OrderStatus("01", "保留");

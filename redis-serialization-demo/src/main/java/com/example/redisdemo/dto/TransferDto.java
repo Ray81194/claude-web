@@ -1,10 +1,17 @@
 package com.example.redisdemo.dto;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 public class TransferDto {
 
     private AccountId fromAccount;
     private AccountId toAccount;
     private Money amount;
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
+    @JsonSerialize(using = OrderStatus.Serializer.class)
+    @JsonDeserialize(using = OrderStatus.Deserializer.class)
     private OrderStatus status;
 
     public TransferDto() {}
