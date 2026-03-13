@@ -2,6 +2,7 @@ package com.example.redisdemo;
 
 import com.example.redisdemo.dto.AccountId;
 import com.example.redisdemo.dto.Money;
+import com.example.redisdemo.dto.OrderStatus;
 import com.example.redisdemo.dto.TransferDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -112,5 +113,51 @@ class RedisSerializationTest {
         assertThat(rawJson).contains("\"currency\":\"JPY\"");
         // TransferDto should have @class
         assertThat(rawJson).contains("\"@class\":\"com.example.redisdemo.dto.TransferDto\"");
+    }
+
+    @Test
+    void testOrderStatusIsSerializedAsCodeString() throws Exception {
+        TransferDto dto = new TransferDto();
+        dto.setFromAccount(AccountId.of("AC-000001"));
+        dto.setToAccount(AccountId.of("AC-000002"));
+        dto.setAmount(Money.of(3000, "JPY"));
+        dto.setStatus(OrderStatus.PENDING);
+
+        redisTemplate.opsForValue().set(KEY, dto);
+
+        String rawJson = stringRedisTemplate.opsForValue().get(KEY);
+        assertThat(rawJson).isNotNull();
+
+        ObjectMapper mapper = new ObjectMapper();
+        Object json = mapper.readValue(rawJson, Object.class);
+        String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+        System.out.println("=== JSON with OrderStatus ===");
+        System.out.println(prettyJson);
+        System.out.println("============================");
+
+        // status はコード文字列として保存される（@class なし、ラベルなし）
+        assertThat(rawJson).contains("\"status\":\"01\"");
+        assertThat(rawJson).doesNotContain("保留");
+        assertThat(rawJson).doesNotContain("\"@class\":\"com.example.redisdemo.dto.OrderStatus\"");
+    }
+
+    @Test
+    void testOrderStatusIsRestoredToSingleton() {
+        TransferDto dto = new TransferDto();
+        dto.setFromAccount(AccountId.of("AC-000001"));
+        dto.setToAccount(AccountId.of("AC-000002"));
+        dto.setAmount(Money.of(3000, "JPY"));
+        dto.setStatus(OrderStatus.CONFIRMED);
+
+        redisTemplate.opsForValue().set(KEY, dto);
+
+        TransferDto retrieved = (TransferDto) redisTemplate.opsForValue().get(KEY);
+
+        assertThat(retrieved).isNotNull();
+        assertThat(retrieved.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        assertThat(retrieved.getStatus().getCode()).isEqualTo("02");
+        assertThat(retrieved.getStatus().getLabel()).isEqualTo("確定");
+        // シングルトンの同一インスタンスであることを確認
+        assertThat(retrieved.getStatus()).isSameAs(OrderStatus.CONFIRMED);
     }
 }

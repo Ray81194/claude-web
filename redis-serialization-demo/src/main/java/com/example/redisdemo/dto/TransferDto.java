@@ -5,6 +5,7 @@ public class TransferDto {
     private AccountId fromAccount;
     private AccountId toAccount;
     private Money amount;
+    private OrderStatus status;
 
     public TransferDto() {}
 
@@ -32,8 +33,16 @@ public class TransferDto {
         this.amount = amount;
     }
 
+    public OrderStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+    }
+
     @Override
     public String toString() {
-        return "TransferDto{fromAccount=" + fromAccount + ", toAccount=" + toAccount + ", amount=" + amount + "}";
+        return "TransferDto{fromAccount=" + fromAccount + ", toAccount=" + toAccount + ", amount=" + amount + ", status=" + status + "}";
     }
 }
