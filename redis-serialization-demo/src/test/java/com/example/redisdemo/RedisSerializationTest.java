@@ -142,7 +142,7 @@ class RedisSerializationTest {
     }
 
     @Test
-    void testOrderStatusIsRestoredToSingleton() {
+    void testOrderStatusIsRestoredToSingleton() throws Exception {
         TransferDto dto = new TransferDto();
         dto.setFromAccount(AccountId.of("AC-000001"));
         dto.setToAccount(AccountId.of("AC-000002"));
@@ -151,13 +151,22 @@ class RedisSerializationTest {
 
         redisTemplate.opsForValue().set(KEY, dto);
 
+        String rawJson = stringRedisTemplate.opsForValue().get(KEY);
+        ObjectMapper mapper = new ObjectMapper();
+        System.out.println("=== Redis に保存された JSON ===");
+        System.out.println(mapper.writerWithDefaultPrettyPrinter()
+                .writeValueAsString(mapper.readValue(rawJson, Object.class)));
+
         TransferDto retrieved = (TransferDto) redisTemplate.opsForValue().get(KEY);
+        System.out.println("=== デシリアライズ後の status ===");
+        System.out.println("  code  : " + retrieved.getStatus().getCode());
+        System.out.println("  label : " + retrieved.getStatus().getLabel());
+        System.out.println("  isSameAs CONFIRMED : " + (retrieved.getStatus() == OrderStatus.CONFIRMED));
 
         assertThat(retrieved).isNotNull();
         assertThat(retrieved.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         assertThat(retrieved.getStatus().getCode()).isEqualTo("02");
         assertThat(retrieved.getStatus().getLabel()).isEqualTo("確定");
-        // シングルトンの同一インスタンスであることを確認
         assertThat(retrieved.getStatus()).isSameAs(OrderStatus.CONFIRMED);
     }
 }
