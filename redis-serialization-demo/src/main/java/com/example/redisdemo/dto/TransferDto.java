@@ -13,6 +13,10 @@ public class TransferDto {
     @JsonSerialize(using = OrderStatus.Serializer.class)
     @JsonDeserialize(using = OrderStatus.Deserializer.class)
     private OrderStatus status;
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
+    @JsonSerialize(using = TransferType.Serializer.class)
+    @JsonDeserialize(using = TransferType.Deserializer.class)
+    private TransferType transferType;
 
     public TransferDto() {}
 
@@ -48,8 +52,16 @@ public class TransferDto {
         this.status = status;
     }
 
+    public TransferType getTransferType() {
+        return transferType;
+    }
+
+    public void setTransferType(TransferType transferType) {
+        this.transferType = transferType;
+    }
+
     @Override
     public String toString() {
-        return "TransferDto{fromAccount=" + fromAccount + ", toAccount=" + toAccount + ", amount=" + amount + ", status=" + status + "}";
+        return "TransferDto{fromAccount=" + fromAccount + ", toAccount=" + toAccount + ", amount=" + amount + ", status=" + status + ", transferType=" + transferType + "}";
     }
 }
