@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 
 import java.io.IOException;
 import java.util.Map;
@@ -56,13 +55,6 @@ public class OrderStatus {
         public void serialize(OrderStatus value, JsonGenerator gen,
                               SerializerProvider provider) throws IOException {
             gen.writeString(value.getCode());
-        }
-
-        @Override
-        public void serializeWithType(OrderStatus value, JsonGenerator gen,
-                                      SerializerProvider provider,
-                                      TypeSerializer typeSer) throws IOException {
-            serialize(value, gen, provider);
         }
     }
 
