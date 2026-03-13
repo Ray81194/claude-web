@@ -4,6 +4,7 @@ import com.example.redisdemo.dto.AccountId;
 import com.example.redisdemo.dto.Money;
 import com.example.redisdemo.dto.OrderStatus;
 import com.example.redisdemo.dto.TransferDto;
+import com.example.redisdemo.dto.TransferType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,6 +123,7 @@ class RedisSerializationTest {
         dto.setToAccount(AccountId.of("AC-000002"));
         dto.setAmount(Money.of(3000, "JPY"));
         dto.setStatus(OrderStatus.PENDING);
+        dto.setTransferType(TransferType.EXPRESS);
 
         redisTemplate.opsForValue().set(KEY, dto);
 
