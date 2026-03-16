@@ -1,14 +1,14 @@
-# Claude を使って技術ドキュメントを育てる：Jackson 設計比較の実例
+# Claude を使って技術ドキュメントを育てる：実際のやり取りの記録
 
 ## この記事について
 
-Claude に技術的な検討ドキュメントを作らせ、会話のなかで段階的に整備していく実例を紹介する。「どんな依頼をしたら何が出てきたか」を具体的に展開する。
+Jackson の値オブジェクトシリアライゼーション設計を検討した際に Claude と行ったやり取りを、実際のプロンプトと出力をそのまま記録した記事。ドキュメントが会話のなかでどのように変化したかを追う。
 
 ---
 
-## 依頼 1：比較ドキュメントを生成する
+## やり取り 1：比較ドキュメントの初期生成
 
-### 出した指示
+### プロンプト
 
 ```
 TransferType のような値オブジェクトを Jackson でシリアライズ/デシリアライズする
@@ -22,230 +22,162 @@ TransferType のような値オブジェクトを Jackson でシリアライズ/
 最後に比較表と推奨を書いてほしい。
 ```
 
-### ポイント
+### 出力（生成されたファイル：`redis-serialization-approaches.md`）
 
-- **選択肢を自分で列挙した**。「いくつかパターンを考えて」よりも、検討したいアプローチを明示すると Claude が軸をブラさずにまとめてくれる。
-- **出力の構成を指定した**（JSON 出力例・実装イメージ・メリデメ・比較表・推奨）。セクション構成を指定することで、後から読みやすい形になる。
-
-### 出力されたドキュメント構成
-
-各アプローチに以下のセクションが生成された。
+各アプローチに対して以下のセクション構成でドキュメントが生成された。
 
 ```
-## Approach N: ～
-### JSON 出力例       ← 実際の JSON 形式
-### 実装イメージ      ← 概念的なコードスニペット（TransferType で説明）
-### 実際のコード      ← 具体実装（OrderStatus / TransferType クラス全体）
+## Approach 1: @JsonTypeInfo(use=NONE) + 独自 Serializer/Deserializer（元の設計）
+### JSON 出力例
+### 実装イメージ      ← TransferType を使った概念コード
+### 実際のコード      ← OrderStatus クラスの具体実装（別セクション）
 ### メリット
 ### デメリット
+
+## Approach 2: @JsonTypeInfo 削除 + 独自 Serializer（型付き）+ 独自 Deserializer（現在の実装）
+...（同構成）
+
+## Approach 3: @JsonTypeInfo 削除 + 独自 Serializer（型付き）+ @JsonCreator
+...（実際のコードセクションなし）
+
+## 比較まとめ（表）
+## 推奨: Approach 1
 ```
 
-末尾に比較表と推奨セクションも生成された。
-
-#### JSON 出力例（Approach 1）
-
-```json
-"transferType": "02"
-```
-
-#### JSON 出力例（Approach 2 / 3）
-
-```json
-"transferType": {
-  "@class": "com.example.TransferType",
-  "code": "02"
-}
-```
-
-#### 比較表（生成されたもの）
-
-| 観点 | Approach 1 | Approach 2 | Approach 3 |
-|------|-----------|-----------|-----------|
-| JSON サイズ | ◎ コンパクト | △ 肥大 | △ 肥大 |
-| 実装のシンプルさ | ◎ シンプル | × 複雑 | ○ 標準的 |
-| 保守性 | ◎ 高い | × 低い | ○ 普通 |
-| ドメインモデルへの影響 | ○ フィールド側のみ | ◎ なし | △ Jackson 依存が入る |
-| Jackson 標準準拠 | ○ 公式 API 使用 | ○ 標準挙動と整合 | ◎ 最も標準的 |
-| `@JsonTypeInfo` 依存 | △ 必要 | ◎ 不要 | ◎ 不要 |
+Approach 1 と 2 には「実装イメージ」と「実際のコード」が**別セクションとして**生成された。Approach 3 は「実際のコード」セクションが存在しなかった。
 
 ---
 
-## 依頼 2：ドキュメントを整理する
+## やり取り 2：セクション構成を整理する
 
-### 出した指示
+### プロンプト
 
 ```
 実装イメージに追加する形にして。approach3にも追加して変数宣言だけでいい
 ```
 
-**16文字の指示。**
+### Claude が行った変更
 
-### Claude が読み取ったこと
+**変更点 1：「実際のコード」セクションを廃止し「実装イメージ」に統合**
 
-この短い指示から Claude は以下を判断した。
-
-1. 「実装イメージに追加する形」＝ 別セクション「実際のコード」を廃止し、「実装イメージ」に統合する
-2. 「approach3にも追加」＝ Approach 3 だけコードが薄かったので追記する
-3. 「変数宣言だけでいい」＝ Approach 3 は全体実装ではなくフィールド定義とクラス宣言のみ
-
-### 変更前（Approach 1 の構造）
-
+変更前（Approach 1）：
 ```
 ### 実装イメージ
-  TransferType を使った概念コード（フィールド + Serializer/Deserializer）
+（TransferType を使った概念コード）
 
 ### 実際のコード（OrderStatus）
-  TransferDto.java のフィールド定義
-  OrderStatus.java のクラス全体
+**TransferDto.java**
+（フィールド定義）
+
+**OrderStatus.java**
+（クラス全体）
 ```
 
-### 変更後（Approach 1 の構造）
-
+変更後（Approach 1）：
 ```
 ### 実装イメージ
-  TransferDto.java のフィールド定義    ← 追加
-  OrderStatus.java のクラス全体        ← 追加（ファイル名ラベル付き）
+
+**TransferDto.java**
+（フィールド定義）
+
+**OrderStatus.java**
+（クラス全体）
 ```
 
-具体的には以下のようにファイル名をラベルとして付けた形に整理された。
+**変更点 2：Approach 3 に変数宣言を追加**
 
-**`TransferDto.java`**
+変更前（Approach 3）：「実際のコード」セクションなし
+
+変更後（Approach 3）：
 ```java
-@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-@JsonSerialize(using = OrderStatus.Serializer.class)
-@JsonDeserialize(using = OrderStatus.Deserializer.class)
-private OrderStatus status;
-```
-
-**`OrderStatus.java`**
-```java
-public class OrderStatus {
-
-    public static final OrderStatus PENDING   = new OrderStatus("01", "保留");
-    public static final OrderStatus CONFIRMED = new OrderStatus("02", "確定");
-
-    private static final Map<String, OrderStatus> CODE_MAP = Map.of(
-            "01", PENDING,
-            "02", CONFIRMED
-    );
-
-    private final String code;
-    private final String label;
-
-    private OrderStatus(String code, String label) {
-        this.code = code;
-        this.label = label;
-    }
-
-    public String getCode()  { return code; }
-    public String getLabel() { return label; }
-
-    public static OrderStatus of(String code) {
-        OrderStatus status = CODE_MAP.get(code);
-        if (status == null) throw new IllegalArgumentException("Unknown code: " + code);
-        return status;
-    }
-
-    public static class Serializer extends JsonSerializer<OrderStatus> {
-        @Override
-        public void serialize(OrderStatus value, JsonGenerator gen,
-                              SerializerProvider provider) throws IOException {
-            gen.writeString(value.getCode());
-        }
-    }
-
-    public static class Deserializer extends JsonDeserializer<OrderStatus> {
-        @Override
-        public OrderStatus deserialize(JsonParser p,
-                                       DeserializationContext ctxt) throws IOException {
-            return OrderStatus.of(p.getValueAsString());
-        }
-    }
-}
-```
-
-### Approach 3 に追加された変数宣言
-
-「変数宣言だけでいい」という指示通り、実装本体ではなく宣言のみが追加された。
-
-**`TransferDto.java`**
-```java
+// TransferDto.java
 @JsonSerialize(using = TransferType.Serializer.class)
 private TransferType transferType;
-```
 
-**`TransferType.java`**
-```java
+// TransferType.java
 @JsonSerialize(using = TransferType.Serializer.class)
 public class TransferType {
     // ...
 }
 ```
 
-Approach 2 と比べると `@JsonDeserialize` アノテーションがない。これにより「Approach 3 は独自 Deserializer が不要」という差分が宣言から視覚的に読み取れるようになった。
-
-### この依頼で学べること
-
-- **省略語・文脈依存の指示でも伝わる**。「実装イメージに追加する形」という曖昧な表現でも、直前のドキュメント構造を把握した上で正しく解釈される。
-- **制約を付けると出力を絞れる**。「変数宣言だけでいい」と明示したことで、Approach 3 だけ過剰に実装されることを防いだ。
+「変数宣言だけでいい」という指示通り、クラス全体の実装ではなくフィールド定義とクラス宣言のみが追加された。Approach 2 と並べると `@JsonDeserialize` の有無で違いが視覚的に分かる形になった。
 
 ---
 
-## 依頼 3：記事化する
+## やり取り 3：記事化を依頼する（1回目）
 
-### 出した指示（1回目）
+### プロンプト
 
 ```
 今までの内容を記事にしたい。
 どのようなプロンプトでどのようなコードとなったかの流れをまとめてほしい。
 ```
 
-### 出た出力
+### 出力（生成されたファイル：`redis-serialization-article.md` 初版）
 
-プロンプトと出力の対応を中心にした技術記事が生成された。構成は以下。
+技術内容（Jackson 設計）を主軸にした記事が生成された。
 
 ```
 # Jackson 値オブジェクトのシリアライゼーション設計：プロンプト駆動での比較ドキュメント作成
 
-## はじめに（背景説明）
+## はじめに
 ## 背景：何が問題だったか
 ## Step 1：3つのアプローチの洗い出し
-  ### プロンプト（引用）
-  ### 生成されたドキュメント構成（表）
+  ### プロンプト
+  ### 生成されたドキュメント構成
 ## Step 2：実装イメージとコードの統合
-  ### プロンプト（引用）
+  ### プロンプト
   ### 変更の意図
-  ### 統合後の構成（コードスニペット）
-## 最終的な比較まとめ（表）
+  ### 統合後の構成（コード抜粋）
+## 最終的な比較まとめ
 ## 推奨と結論
-## ドキュメント整備の流れまとめ（ASCII フロー図）
+## ドキュメント整備の流れまとめ
 ```
 
-### 出した指示（2回目・本記事）
+---
+
+## やり取り 4：記事の観点を変えて再作成する
+
+### プロンプト
 
 ```
 claudeの使い方の観点で再作成して。どんな依頼で出力がどうなったかを展開したい
 ```
 
-### 1回目との違い
+### 出力（`redis-serialization-article.md` 2版）
 
-| 観点 | 1回目 | 2回目（本記事） |
-|------|-------|----------------|
-| 主語 | 技術内容（Jackson 設計） | Claude の使い方 |
+「Jackson 設計の記事」から「Claude の使い方の記事」に切り替わった。同じ素材から全く異なる記事が生成された。
+
+| 観点 | 1版（技術軸） | 2版（Claude 使い方軸） |
+|------|-------------|----------------------|
+| 主語 | Jackson のアプローチ | Claude への依頼パターン |
 | 読者 | Jackson を調べている人 | Claude の使い方を知りたい人 |
 | 展開の軸 | 技術的な比較 | 依頼→出力→気づき の繰り返し |
 | コード量 | 要所のみ | 変更前後を並べて展開 |
 
-「観点を変えて再作成」という指示で、同じ素材から全く異なる切り口の記事が生成された。
+---
+
+## やり取り 5：実際のやり取りをベースにした再作成（本記事）
+
+### プロンプト
+
+```
+過去のやり取りをベースにしてほしい
+```
+
+### 変更内容
+
+2版では一部のプロンプトを推測・補完して記述していた。本記事（3版）では実際に交わした会話のプロンプトをそのまま引用し、出力の変化を忠実に記録した形に修正した。
 
 ---
 
-## まとめ：依頼のパターンと効果
+## まとめ：このやり取りから読み取れる Claude の使い方
 
-| 依頼パターン | 効果 | 本記事での例 |
-|-------------|------|-------------|
-| 選択肢を自分で列挙して比較を頼む | 軸がブレない。比較表が充実する | Approach 1〜3 を事前に定義 |
-| 出力の構成を指定する | セクション構成が安定する | JSON 出力例・実装イメージ・メリデメ・比較表・推奨 |
-| 短い指示で差分変更を頼む | 既存構造を壊さず必要箇所だけ修正される | 「実装イメージに追加する形にして」 |
-| 制約を付けて出力を絞る | 過剰な生成を防げる | 「変数宣言だけでいい」 |
-| 観点を指定して再作成を頼む | 同じ素材から別の記事が生成できる | 「claudeの使い方の観点で再作成して」 |
+| やり取り | 依頼の特徴 | 結果 |
+|---------|----------|------|
+| 1 | 選択肢を事前に列挙し、出力構成を明示 | 指定した軸で安定した比較ドキュメントが生成された |
+| 2 | 短い一文で差分変更を指示、制約を付けて出力を絞った | 既存構造を保ちながら必要箇所だけが変更された |
+| 3 | 「流れをまとめて」と目的だけ伝えた | 技術内容を軸にした記事が生成された |
+| 4 | 「観点を変えて」と軸を上書きした | 同じ素材から別の記事に切り替わった |
+| 5 | 「実際のやり取りをベースに」と事実の根拠を指定 | 推測部分が削除され、実際の会話に忠実な内容になった |
