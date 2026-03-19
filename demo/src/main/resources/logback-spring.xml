@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- application.properties から Redis 接続情報を取得 -->
+    <springProperty name="redis.host" source="spring.data.redis.host" defaultValue="localhost"/>
+    <springProperty name="redis.port" source="spring.data.redis.port" defaultValue="6379"/>
+
+    <!-- コンソール出力 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        Redis エラーログ Appender
+        ・ERROR 以上のログのみ記録（ThresholdFilter）
+        ・Redis リスト app:logs:error に JSON 文字列として LPUSH
+        ・最大 1000 件保持（LTRIM）
+    -->
+    <appender name="REDIS_ERROR" class="com.example.demo.logging.RedisLogbackAppender">
+        <redisHost>${redis.host}</redisHost>
+        <redisPort>${redis.port}</redisPort>
+        <redisKey>app:logs:error</redisKey>
+        <maxEntries>1000</maxEntries>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+
+    <!-- Spring Session のデバッグログ -->
+    <logger name="org.springframework.session" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="REDIS_ERROR"/>
+    </root>
+
+</configuration>
