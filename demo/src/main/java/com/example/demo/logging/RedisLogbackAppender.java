@@ -7,7 +7,7 @@ import ch.qos.logback.core.AppenderBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -30,9 +30,9 @@ public class RedisLogbackAppender extends AppenderBase<ILoggingEvent> {
     private String redisKey   = "app:logs:error";
     private int    maxEntries = 1000;
 
-    private RedisClient                      redisClient;
+    private RedisClient                           redisClient;
     private StatefulRedisConnection<String, String> connection;
-    private RedisCommands<String, String>    commands;
+    private RedisAsyncCommands<String, String>    commands;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -43,7 +43,7 @@ public class RedisLogbackAppender extends AppenderBase<ILoggingEvent> {
         try {
             redisClient = RedisClient.create("redis://" + redisHost + ":" + redisPort);
             connection  = redisClient.connect();
-            commands    = connection.sync();
+            commands    = connection.async();
         } catch (Exception e) {
             // addWarn にして起動を継続（addError は Spring Boot が起動失敗として扱うため使わない）
             addWarn("Redis 接続失敗（ログは Redis へ記録されません）: " + e.getMessage());
@@ -68,8 +68,9 @@ public class RedisLogbackAppender extends AppenderBase<ILoggingEvent> {
         try {
             Map<String, Object> entry = buildEntry(event);
             String json = objectMapper.writeValueAsString(entry);
-            commands.lpush(redisKey, json);
-            commands.ltrim(redisKey, 0, maxEntries - 1);
+            commands.lpush(redisKey, json)
+                    .thenAccept(ignored -> commands.ltrim(redisKey, 0, maxEntries - 1))
+                    .exceptionally(ex -> { addError("Redis ltrim 失敗", ex); return null; });
         } catch (Exception e) {
             addError("Redis へのログ書き込み失敗", e);
         }
