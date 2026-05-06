@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "ItaApplication",
+            "request": "launch",
+            "mainClass": "com.example.dev.ita.ItaApplication",
+            "projectName": "ita"
+        }
+    ]
+}

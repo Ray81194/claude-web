@@ -1,0 +1,30 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot'
+}
+
+springBoot {
+    mainClass = 'com.example.dev.ita.ItaApplication'
+}
+
+dependencies {
+    // api 依存 → app:jsp の JAR がクラスパスに追加されるが src/main/resources は
+    // JAR 内にパッケージされるため Jasper が getRealPath() で null を返す → JSP コンパイル不可
+    api project(':app:jsp')
+
+    implementation project(':dev:common')
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    // runtimeOnly は api/implementation で伝播しないため再宣言
+    runtimeOnly 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    runtimeOnly 'org.glassfish.web:jakarta.servlet.jsp.jstl:3.0.1'
+}
+
+bootRun {
+    // dev:ita 自身の src/main/resources をディレクトリとしてクラスパスに追加
+    sourceResources sourceSets.main
+    // app:jsp の src/main/resources もディレクトリとして追加
+    // → Jasper が getRealPath() でファイルシステムパスを取得可能 → bootRun は動作する
+    // VSCode Dashboard はこれに相当する仕組みがないためバグが発生する
+    classpath += files(project(':app:jsp').sourceSets.main.resources.srcDirs)
+}

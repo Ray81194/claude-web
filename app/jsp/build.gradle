@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot'
+}
+
+bootJar { enabled = false }
+jar { enabled = true }
+
+dependencies {
+    api 'org.springframework.boot:spring-boot-starter-web'
+
+    // JSP エンジン: runtimeOnly のため dev:ita で再宣言が必要
+    runtimeOnly 'org.apache.tomcat.embed:tomcat-embed-jasper'
+
+    // JSTL (Jakarta EE 10 / Spring Boot 3.x)
+    runtimeOnly 'org.glassfish.web:jakarta.servlet.jsp.jstl:3.0.1'
+}

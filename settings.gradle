@@ -1,0 +1,6 @@
+rootProject.name = 'claude-web'
+
+include 'app:jsp'
+include 'app:logic'
+include 'dev:common'
+include 'dev:ita'
