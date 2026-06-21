@@ -5,8 +5,7 @@ public class Application {
     public void run(String[] args) {
         if (args == null || args.length == 0) {
             System.err.println("Error: no arguments provided");
-            SystemWrapper.exit(1);
-            return;
+            System.exit(1);
         }
 
         String command = args[0];
@@ -14,11 +13,11 @@ public class Application {
             case "hello" -> System.out.println("Hello, World!");
             case "exit" -> {
                 System.out.println("Exiting with code 0");
-                SystemWrapper.exit(0);
+                System.exit(0);
             }
             default -> {
                 System.err.println("Unknown command: " + command);
-                SystemWrapper.exit(2);
+                System.exit(2);
             }
         }
     }
