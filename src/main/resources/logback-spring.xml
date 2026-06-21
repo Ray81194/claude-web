@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- application.yml / 環境変数から Redis 接続情報を取得 -->
+    <springProperty name="REDIS_HOST"     source="spring.data.redis.host"     defaultValue="localhost"/>
+    <springProperty name="REDIS_PORT"     source="spring.data.redis.port"     defaultValue="6379"/>
+    <springProperty name="REDIS_PASSWORD" source="spring.data.redis.password" defaultValue=""/>
+    <springProperty name="LOG_KEY"        source="redis.log.key"              defaultValue="app:logs"/>
+    <springProperty name="MAX_ENTRIES"    source="redis.log.max-entries"      defaultValue="1000"/>
+
+    <!-- 通常のコンソール出力 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Redis へ書き込むカスタムアペンダー -->
+    <appender name="REDIS" class="com.example.redislog.appender.RedisLogAppender">
+        <host>${REDIS_HOST}</host>
+        <port>${REDIS_PORT}</port>
+        <password>${REDIS_PASSWORD}</password>
+        <key>${LOG_KEY}</key>
+        <maxEntries>${MAX_ENTRIES}</maxEntries>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+    <!-- 非同期化して I/O ブロックを回避 -->
+    <appender name="ASYNC_REDIS" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="REDIS"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_REDIS"/>
+    </root>
+
+</configuration>
