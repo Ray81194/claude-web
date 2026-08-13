@@ -1,14 +1,36 @@
 #!/usr/bin/env bash
 # 特定ブランチ（例: 修正1）由来のマージだけを抽出して整理表示する。
 #
-#   使い方: ./extract-branch-merges.sh <対象ブランチ> [統合先ブランチ]
+#   使い方: ./extract-branch-merges.sh [--verify] <対象ブランチ> [統合先ブランチ]
 #   例:     ./extract-branch-merges.sh 修正1 main
+#           ./extract-branch-merges.sh --verify 修正1 main
+#
+#   引数1 (必須): 対象ブランチ TOPIC（抽出したいブランチ。例: 修正1）
+#   引数2 (任意): 統合先ブランチ BASE（既定: main）
+#   --verify    : 混入ゼロの恒等チェックを実行（マージ数に比例して重いので既定off）
+#
+#   ブランチ名の代わりにコミットSHA・タグ・origin/xxx なども指定可。
+#   終了コード: 0=正常 / 1=ブランチが見つからない
 #
 # 読み取り専用。checkout / merge / rebase / reset は一切実行しない。
 set -uo pipefail
 
+VERIFY=0
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --verify) VERIFY=1 ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+set -- "${ARGS[@]:-}"
+
 TOPIC="${1:?対象ブランチ名を指定してください（例: 修正1）}"
 BASE="${2:-main}"
+
+git rev-parse --verify --quiet "$TOPIC^{commit}" >/dev/null \
+  || echo "注意: '$TOPIC' がコミットとして解決できません。" >&2
 
 git rev-parse --verify --quiet "$BASE" >/dev/null || { echo "ブランチが見つかりません: $BASE" >&2; exit 1; }
 
@@ -85,12 +107,13 @@ for M in "${MERGES[@]}"; do
   else
     echo "警告: M^2 が ${TOPIC} の歴史にありません。別ブランチのマージの可能性。"
   fi
-  # (b) 混入がゼロなのは M^1..M^2 の定義（M^1 の祖先は全て除外）による。実数で確認。
-  LEAK=$(git rev-list --no-merges "${M}^1..${M}^2" \
-         | while read -r c; do
-             git merge-base --is-ancestor "$c" "${M}^1" 2>/dev/null && echo "$c"
-           done | wc -l)
-  echo "OK: 範囲内で ${BASE} 側にも存在するコミット = ${LEAK} 件（M^1..M^2 の定義上ゼロ）"
+  # (b) 混入がゼロなのは M^1..M^2 の定義（M^1 の祖先は全て除外）による恒等チェック。
+  #     マージ毎に履歴をフル走査するためマージ数に比例して重い。既定ではスキップ。
+  if [ "$VERIFY" -eq 1 ]; then
+    LEAK=$(comm -12 <(git rev-list --no-merges "${M}^1..${M}^2" | sort -u) \
+                    <(git rev-list "${M}^1" | sort -u) | wc -l)
+    echo "OK: 範囲内で ${BASE} 側にも存在するコミット = ${LEAK} 件（M^1..M^2 の定義上ゼロ）"
+  fi
   # (c) この区間で「main から修正1 へ取り込んだ」ため除外されたコミット数を提示。
   FORK=$(git merge-base "${M}^1" "${M}^2")
   EXCL=$(git rev-list --count --no-merges "${FORK}..${M}^1")
@@ -146,10 +169,10 @@ if git rev-parse --verify --quiet "$TOPIC" >/dev/null; then
     echo "  → M^1..M^2 では復元できません。代わりに以下で概ね確認できます:"
     echo "      git log --oneline \$(git merge-base $BASE $TOPIC)..$TOPIC"
   else
-    UNACCOUNTED=$(git rev-list --no-merges "$TOPIC" | sort -u | comm -23 - "$COVERED" \
-                  | while read -r c; do
-                      git merge-base --is-ancestor "$c" "$BASE" 2>/dev/null && echo "$c"
-                    done | wc -l)
+    # 「BASE に到達済み」= BASE から辿れる集合との積。per-commit の merge-base は使わない。
+    UNACCOUNTED=$(comm -12 <(git rev-list --no-merges "$TOPIC" | sort -u) \
+                           <(git rev-list "$BASE" | sort -u) \
+                  | comm -23 - "$COVERED" | wc -l)
     echo "・明確な fast-forward は検出されませんでした。"
     echo "  （$BASE に到達済みでマージ範囲に現れないコミット: ${UNACCOUNTED} 件。"
     echo "    これは ff 由来と $BASE 上で書かれたコミットの両方を含み、事後的に区別できません）"
